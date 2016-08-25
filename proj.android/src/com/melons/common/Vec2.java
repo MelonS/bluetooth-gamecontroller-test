@@ -49,6 +49,10 @@ public class Vec2 implements Serializable {
 		this(toCopy.x, toCopy.y);
 	}
 
+	public final boolean isZero() {
+		return (x == 0.0f && y == 0.0f);
+	}
+	
 	/** Zero out this vector. */
 	public final void setZero() {
 		x = 0.0f;
