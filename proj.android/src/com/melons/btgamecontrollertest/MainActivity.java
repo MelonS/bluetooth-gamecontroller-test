@@ -21,11 +21,13 @@ public class MainActivity extends Activity {
 	private TextView _tv3 = null;
 	private TextView _tv4 = null;
 	
+	private int _tv1Alpha = 255;
+	private int _tv2Alpha = 255;
+	
 	private DebugHandler _handler = new DebugHandler();
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
-		Log.i(TAG, "onCreate");
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
 		
@@ -33,7 +35,6 @@ public class MainActivity extends Activity {
 		_tv2 = (TextView)findViewById(R.id.tv2);
 		_tv3 = (TextView)findViewById(R.id.tv3);
 		_tv4 = (TextView)findViewById(R.id.tv4);
-		
 		
 		GameControllerManager.getInstance().init(this, _handler);
 	}
@@ -46,10 +47,24 @@ public class MainActivity extends Activity {
 			
 			switch (msg.what) {
 			case GameControllerManager.MSG_WHAT_BUTTON_A:
+			{
 				_tv1.setText("KeyDown [BUTTON_A] repeatCount:"+msg.arg1+" time:"+msg.arg2);
+				
+				_tv1Alpha -= 10;
+				if (_tv1Alpha <= 0) _tv1Alpha = 255;
+				int c = Color.argb(_tv1Alpha, Color.red(Color.YELLOW), Color.green(Color.YELLOW), Color.blue(Color.YELLOW));
+				_tv1.setBackgroundColor(c);
+			}
 				break;
 			case GameControllerManager.MSG_WHAT_BUTTON_B:
+			{
 				_tv2.setText("KeyDown [BUTTON_B] repeatCount:"+msg.arg1+" time:"+msg.arg2);
+				
+				_tv2Alpha -= 10;
+				if (_tv2Alpha <= 0) _tv2Alpha = 255;
+				int c = Color.argb(_tv2Alpha, Color.red(Color.parseColor("aqua")), Color.green(Color.parseColor("aqua")), Color.blue(Color.parseColor("aqua")));
+				_tv2.setBackgroundColor(c);
+			}
 				break;
 			case GameControllerManager.MSG_WHAT_JOYSTICK_MOVE:
 			{
@@ -62,6 +77,8 @@ public class MainActivity extends Activity {
 					x = xy.x;
 					y = xy.y;
 				}
+				
+				Log.i(TAG,"x:["+xy.x+"] y:["+xy.y+"]");
 				
 				_tv3.setText("x:["+x+"] y:["+y+"]");
 				_tv4.setText("time:"+eventTime);
