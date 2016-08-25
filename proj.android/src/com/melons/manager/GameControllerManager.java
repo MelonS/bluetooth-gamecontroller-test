@@ -1,5 +1,10 @@
 package com.melons.manager;
 
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+
 import android.app.Activity;
 import android.content.Context;
 import android.os.Handler;
@@ -20,6 +25,8 @@ public class GameControllerManager implements InputDeviceListener {
 	public static final int MSG_WHAT_BUTTON_A 		= 1;
 	public static final int MSG_WHAT_BUTTON_B 		= 2;
 	public static final int MSG_WHAT_JOYSTICK_MOVE 	= 3;
+
+	private static final int JOYSTICK_MOVE_SEND_PERIOD = 10; // millisecond
 	
 	private static GameControllerManager __inst = null;
 	
@@ -29,6 +36,8 @@ public class GameControllerManager implements InputDeviceListener {
 	private Handler _handler = null;
 	
 	private InputManagerCompat _InputManager = null;
+	
+	private BlockingQueue<JoystickMoveData> _joystickMoveDatas = new LinkedBlockingQueue<JoystickMoveData>();
 	
 	public static GameControllerManager getInstance() {
 		if (__inst == null) {
@@ -45,11 +54,13 @@ public class GameControllerManager implements InputDeviceListener {
 		_activity = act;
 		_context = act.getApplicationContext();
 		_handler = handler;
-		
+				
 		_InputManager = InputManagerCompat.Factory.getInputManager(_context);
 		_InputManager.registerInputDeviceListener(this, null);
 		
 		printFindControllers();
+		
+		runScheduleJoystickMoveEvent();
 	}
 
 	/*
@@ -144,6 +155,9 @@ public class GameControllerManager implements InputDeviceListener {
 	}
 	
 	private void printFindControllers() {
+		
+		boolean isFind = false;
+		
         int[] deviceIds = _InputManager.getInputDeviceIds();
         //Log.i(TAG, "findControllers deviceCount:["+deviceIds.length+"]");
         for (int deviceId : deviceIds) {
@@ -154,16 +168,73 @@ public class GameControllerManager implements InputDeviceListener {
             // if the device is a gamepad/joystick, create a ship to represent it
             if (((sources & InputDevice.SOURCE_GAMEPAD) == InputDevice.SOURCE_GAMEPAD) ||
                     ((sources & InputDevice.SOURCE_JOYSTICK) == InputDevice.SOURCE_JOYSTICK)) {
+            	
                 // if the device has a gamepad or joystick
-            	Log.i(TAG, "printFindControllers : Find the JOYSTICK OR GAMEPAD!!!");
-            }else{
-            	Log.i(TAG, "printFindControllers : Not find to JOYSTICK OR GAMEPAD!!!");
+            	isFind = true;
             }
+        }
+        
+        if (isFind) {
+        	Log.i(TAG, "printFindControllers : Find the JOYSTICK OR GAMEPAD!!!");
+        }else{
+        	Log.i(TAG, "printFindControllers : Not find to JOYSTICK OR GAMEPAD!!!");
         }
     }
 	
 	private void handleJoystickMoveEvent(MotionEvent event, Vec2 xy) {
-		//Log.i(TAG,"x:["+xy.x+"] y:["+xy.y+"]");
-		sendMessageAtHandler(MSG_WHAT_JOYSTICK_MOVE, (int) event.getEventTime(), -1, xy);
+		
+		// 데이터 => index(순서대로) : event+xy 컨테이너(큐)에 뒤에다가 넣는다.
+		_joystickMoveDatas.offer(new JoystickMoveData(event, xy));
+	}
+
+	private void runScheduleJoystickMoveEvent() {
+		JoystickMoveEventScheduler job = new JoystickMoveEventScheduler();
+		Timer t = new Timer();
+		t.schedule(job, 0, JOYSTICK_MOVE_SEND_PERIOD);
+	}
+	
+	/*
+	 * Inner Classes
+	 */
+	
+	class JoystickMoveData {
+		public MotionEvent event;
+		public Vec2 xy;
+		public JoystickMoveData(MotionEvent event_, Vec2 xy_) {
+			this.event = event_;
+			this.xy    = xy_;
+		}
+	}
+	
+	class JoystickMoveEventScheduler extends TimerTask {
+		@Override
+		public void run() {
+			//Log.i(TAG, "JoystickMoveEventScheduler run() : "+System.currentTimeMillis());
+
+			if (!_joystickMoveDatas.isEmpty()) {
+				
+				//Log.i(TAG, "_joystickMoveDatas Size:"+_joystickMoveDatas.size());
+				
+				if (_joystickMoveDatas.size() == 1) { // 1개 있을 때
+					JoystickMoveData checkData = _joystickMoveDatas.peek();
+					if (checkData.xy.isZero()) {
+						//  2-2. [0,0] 일때.
+						//    getFront => send => popFront
+						_joystickMoveDatas.poll(); // remove
+						sendMessageAtHandler(MSG_WHAT_JOYSTICK_MOVE, (int) checkData.event.getEventTime(), -1, checkData.xy);
+					}else{
+						//  2-1. [0,0] 이 아닐때.
+						//    getFront => send	
+						//sendMessageAtHandler(MSG_WHAT_JOYSTICK_MOVE, (int) checkData.event.getEventTime(), -1, checkData.xy); // TODO : 사용할 코드.
+						sendMessageAtHandler(MSG_WHAT_JOYSTICK_MOVE, (int) System.currentTimeMillis(), -1, checkData.xy); // TODO : 테스트 코드.
+					}
+				}else{
+					// 여러개 있을 때
+					// getFront => send => popFront 
+					JoystickMoveData data = _joystickMoveDatas.poll(); // remove
+					sendMessageAtHandler(MSG_WHAT_JOYSTICK_MOVE, (int) data.event.getEventTime(), -1, data.xy);
+				}
+			}
+		}
 	}
 }
