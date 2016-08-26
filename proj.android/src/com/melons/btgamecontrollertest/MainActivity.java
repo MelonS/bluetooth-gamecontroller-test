@@ -19,7 +19,7 @@ import com.melons.manager.GameControllerManager;
 public class MainActivity extends Activity {
 	private static final String TAG = "MainActivity";
 	
-	private static int TEXT_VIEW_COUNT = 12;
+	private static int TEXT_VIEW_COUNT = 16;
 	private TextView[] _tvs;
 	
 	private int[] _tvAlpha = new int[TEXT_VIEW_COUNT];
@@ -51,7 +51,7 @@ public class MainActivity extends Activity {
         for (int l = 0; l < TEXT_VIEW_COUNT; ++l)
         {
         	_tvs[l] = new TextView(this);
-        	_tvs[l].setTextSize(21);
+        	_tvs[l].setTextSize(15);
         	_tvs[l].setLayoutParams(lp);
         	_tvs[l].setId(l);
         	_tvs[l].setText((l + 1) + ": something");
@@ -103,15 +103,14 @@ public class MainActivity extends Activity {
 				printKeyDown(msg, 9, "BUTTON_SELECT", Color.rgb(125, 0, 255));
 				break;
 				
-			case GameControllerManager.MSG_WHAT_JOYSTICK_MOVE:
+			case GameControllerManager.MSG_WHAT_JOYSTICK_MOVE_L_STICK:
 			{
-				int eventTime = msg.arg1;
 				Vec2 xy = (Vec2)msg.obj;
 				if (xy != null) {
-					Log.i(TAG,"x:["+xy.x+"] y:["+xy.y+"]");
+					Log.i(TAG,"LS x:["+xy.x+"] y:["+xy.y+"]");
 					
 					_tvs[10].setText("x:["+xy.x+"] y:["+xy.y+"]");
-					_tvs[11].setText("time:"+eventTime);
+					_tvs[11].setText("time:"+msg.arg1);
 					
 					if (xy.isZero()) {
 						_tvs[10].setBackgroundColor(Color.TRANSPARENT);
@@ -121,8 +120,53 @@ public class MainActivity extends Activity {
 						_tvs[11].setBackgroundColor(Color.GREEN);
 					}
 				}
-			}
+				
 				break;
+			}
+				
+			case GameControllerManager.MSG_WHAT_JOYSTICK_MOVE_HAT:
+			{
+				Vec2 xy = (Vec2)msg.obj;
+				if (xy != null) {
+					Log.i(TAG,"HA x:["+xy.x+"] y:["+xy.y+"]");
+					
+					_tvs[12].setText("x:["+xy.x+"] y:["+xy.y+"]");
+					_tvs[13].setText("time:"+msg.arg1);
+					
+					if (xy.isZero()) {
+						_tvs[12].setBackgroundColor(Color.TRANSPARENT);
+						_tvs[13].setBackgroundColor(Color.TRANSPARENT);
+					}else{
+						_tvs[12].setBackgroundColor(Color.RED);
+						_tvs[13].setBackgroundColor(Color.BLUE);
+					}
+				}
+				
+				
+				break;
+			}
+			
+			case GameControllerManager.MSG_WHAT_JOYSTICK_MOVE_R_STICK:
+			{
+				Vec2 xy = (Vec2)msg.obj;
+				if (xy != null) {
+					Log.i(TAG,"RS x:["+xy.x+"] y:["+xy.y+"]");
+					
+					_tvs[14].setText("x:["+xy.x+"] y:["+xy.y+"]");
+					_tvs[15].setText("time:"+msg.arg1);
+					
+					if (xy.isZero()) {
+						_tvs[14].setBackgroundColor(Color.TRANSPARENT);
+						_tvs[15].setBackgroundColor(Color.TRANSPARENT);
+					}else{
+						_tvs[14].setBackgroundColor(Color.RED);
+						_tvs[15].setBackgroundColor(Color.MAGENTA);
+					}
+				}
+				
+				break;
+			}
+			
 			}
 		}
 	}
