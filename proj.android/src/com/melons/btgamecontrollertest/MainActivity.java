@@ -9,20 +9,20 @@ import android.os.Message;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
+import android.view.ViewGroup.LayoutParams;
+import android.widget.LinearLayout;
 import android.widget.TextView;
+
 import com.melons.common.Vec2;
 import com.melons.manager.GameControllerManager;
 
 public class MainActivity extends Activity {
 	private static final String TAG = "MainActivity";
 	
-	private TextView _tv1 = null;
-	private TextView _tv2 = null;
-	private TextView _tv3 = null;
-	private TextView _tv4 = null;
+	private static int TEXT_VIEW_COUNT = 12;
+	private TextView[] _tvs;
 	
-	private int _tv1Alpha = 255;
-	private int _tv2Alpha = 255;
+	private int[] _tvAlpha = new int[TEXT_VIEW_COUNT];
 	
 	private DebugHandler _handler = new DebugHandler();
 	
@@ -31,10 +31,7 @@ public class MainActivity extends Activity {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
 		
-		_tv1 = (TextView)findViewById(R.id.tv1);
-		_tv2 = (TextView)findViewById(R.id.tv2);
-		_tv3 = (TextView)findViewById(R.id.tv3);
-		_tv4 = (TextView)findViewById(R.id.tv4);
+		initTextViews();
 		
 		GameControllerManager.getInstance().init(this, _handler);
 	}
@@ -47,7 +44,26 @@ public class MainActivity extends Activity {
 		GameControllerManager.callSetEnable(true);
 	}
 
-
+	private void initTextViews() {
+		LinearLayout mainLayout = (LinearLayout)findViewById(R.id.main_layout);
+		LayoutParams lp = new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
+		_tvs = new TextView[TEXT_VIEW_COUNT];
+        for (int l = 0; l < TEXT_VIEW_COUNT; ++l)
+        {
+        	_tvs[l] = new TextView(this);
+        	_tvs[l].setTextSize(21);
+        	_tvs[l].setLayoutParams(lp);
+        	_tvs[l].setId(l);
+        	_tvs[l].setText((l + 1) + ": something");
+        	mainLayout.addView(_tvs[l]);
+        }
+        
+        for (int i = 0; i < TEXT_VIEW_COUNT; ++i)
+        {
+        	_tvAlpha[i] = 255;
+        }
+	}
+	
 
 	@SuppressLint("HandlerLeak")
 	class DebugHandler extends Handler {
@@ -57,25 +73,36 @@ public class MainActivity extends Activity {
 			
 			switch (msg.what) {
 			case GameControllerManager.MSG_WHAT_BUTTON_A:
-			{
-				_tv1.setText("KeyDown [BUTTON_A] repeatCount:"+msg.arg1+" time:"+msg.arg2);
-				
-				_tv1Alpha -= 10;
-				if (_tv1Alpha <= 0) _tv1Alpha = 255;
-				int c = Color.argb(_tv1Alpha, Color.red(Color.YELLOW), Color.green(Color.YELLOW), Color.blue(Color.YELLOW));
-				_tv1.setBackgroundColor(c);
-			}
+				printKeyDown(msg, 0, "BUTTON_A", Color.rgb(255, 0, 0));
 				break;
 			case GameControllerManager.MSG_WHAT_BUTTON_B:
-			{
-				_tv2.setText("KeyDown [BUTTON_B] repeatCount:"+msg.arg1+" time:"+msg.arg2);
-				
-				_tv2Alpha -= 10;
-				if (_tv2Alpha <= 0) _tv2Alpha = 255;
-				int c = Color.argb(_tv2Alpha, Color.red(Color.parseColor("aqua")), Color.green(Color.parseColor("aqua")), Color.blue(Color.parseColor("aqua")));
-				_tv2.setBackgroundColor(c);
-			}
+				printKeyDown(msg, 1, "BUTTON_B", Color.rgb(255, 125, 0));
 				break;
+			case GameControllerManager.MSG_WHAT_BUTTON_X:
+				printKeyDown(msg, 2, "BUTTON_X", Color.rgb(255, 255, 0));
+				break;
+			case GameControllerManager.MSG_WHAT_BUTTON_Y:
+				printKeyDown(msg, 3, "BUTTON_Y", Color.rgb(125, 255, 0));
+				break;
+			case GameControllerManager.MSG_WHAT_BUTTON_L1:
+				printKeyDown(msg, 4, "BUTTON_L1", Color.rgb(0, 255, 0));
+				break;
+			case GameControllerManager.MSG_WHAT_BUTTON_R1:
+				printKeyDown(msg, 5, "BUTTON_R1", Color.rgb(0, 255, 125));
+				break;
+			case GameControllerManager.MSG_WHAT_BUTTON_L2:
+				printKeyDown(msg, 6, "BUTTON_L2", Color.rgb(0, 255, 255));
+				break;
+			case GameControllerManager.MSG_WHAT_BUTTON_R2:
+				printKeyDown(msg, 7, "BUTTON_R2", Color.rgb(0, 125, 255));
+				break;
+			case GameControllerManager.MSG_WHAT_BUTTON_START:
+				printKeyDown(msg, 8, "BUTTON_START", Color.rgb(0, 0, 255));
+				break;
+			case GameControllerManager.MSG_WHAT_BUTTON_SELECT:
+				printKeyDown(msg, 9, "BUTTON_SELECT", Color.rgb(125, 0, 255));
+				break;
+				
 			case GameControllerManager.MSG_WHAT_JOYSTICK_MOVE:
 			{
 				int eventTime = msg.arg1;
@@ -83,15 +110,15 @@ public class MainActivity extends Activity {
 				if (xy != null) {
 					Log.i(TAG,"x:["+xy.x+"] y:["+xy.y+"]");
 					
-					_tv3.setText("x:["+xy.x+"] y:["+xy.y+"]");
-					_tv4.setText("time:"+eventTime);
+					_tvs[10].setText("x:["+xy.x+"] y:["+xy.y+"]");
+					_tvs[11].setText("time:"+eventTime);
 					
 					if (xy.isZero()) {
-						_tv3.setBackgroundColor(Color.TRANSPARENT);
-						_tv4.setBackgroundColor(Color.TRANSPARENT);
+						_tvs[10].setBackgroundColor(Color.TRANSPARENT);
+						_tvs[11].setBackgroundColor(Color.TRANSPARENT);
 					}else{
-						_tv3.setBackgroundColor(Color.RED);
-						_tv4.setBackgroundColor(Color.GREEN);
+						_tvs[10].setBackgroundColor(Color.RED);
+						_tvs[11].setBackgroundColor(Color.GREEN);
 					}
 				}
 			}
@@ -99,13 +126,29 @@ public class MainActivity extends Activity {
 			}
 		}
 	}
+	
+	private void printKeyDown(Message msg, int index, String key_name, int color) {
+		
+		_tvs[index].setText("KeyDown ["+key_name+"] repeatCount:"+msg.arg1+" time:"+msg.arg2);
+		changeTextViewBackgroundAlpha(index, color);
+	}
+	
+	private void changeTextViewBackgroundAlpha(int index, int color) {
+		
+		_tvAlpha[index] -= 10;
+		if (_tvAlpha[index] <= 0) 
+			_tvAlpha[index] = 255;
+		
+		int c = Color.argb(_tvAlpha[index], Color.red(color), Color.green(color), Color.blue(color));
+		_tvs[index].setBackgroundColor(c);
+	}
 
 	/*
 	 * Input Methods
 	 */
 	@Override
 	public boolean onKeyDown(int keyCode, KeyEvent event) {
-		//Log.i(TAG, "onKeyDown keyCode:"+keyCode+" event:"+event);
+		Log.i(TAG, "onKeyDown keyCode:"+keyCode+" event:"+event);
 
 		if (GameControllerManager.getInstance().handleKeyDown(keyCode, event))
 			return true;
@@ -122,7 +165,7 @@ public class MainActivity extends Activity {
 
 	@Override
 	public boolean onGenericMotionEvent(MotionEvent event) {
-		//Log.i(TAG, "onGenericMotionEvent event:"+event);
+		Log.i(TAG, "onGenericMotionEvent event:"+event);
 
 		if (GameControllerManager.getInstance().handleGenericMotionEvent(event))
 			return true;
