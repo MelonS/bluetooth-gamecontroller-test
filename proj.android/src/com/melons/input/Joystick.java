@@ -6,6 +6,9 @@ import android.view.MotionEvent;
 import com.melons.common.Vec2;
 
 public class Joystick {
+	
+	@SuppressWarnings("unused")
+	private static final String TAG = "Joystick";
 
 	public static boolean isJoystickDevice(MotionEvent event) {
 		
@@ -26,50 +29,62 @@ public class Joystick {
 		}
 	}
 	
-	public static Vec2 processJoystickInput(MotionEvent event, int historyPos) {
+	public static JoystickMoveData processJoystickInput(MotionEvent event, int historyPos) {
 
 	    InputDevice mInputDevice = event.getDevice();
-
-	    // Calculate the horizontal distance to move by
-	    // using the input value from one of these physical controls:
-	    // the left control stick, hat axis, or the right control stick.
-	    float x = getCenteredAxis(event, mInputDevice,
-	            MotionEvent.AXIS_X, historyPos);
-	    if (x == 0) {
-	        x = getCenteredAxis(event, mInputDevice,
-	                MotionEvent.AXIS_HAT_X, historyPos);
+	    
+	    int axisX = -1;	    
+	    Float x = getCenteredAxis(event, mInputDevice, MotionEvent.AXIS_X, historyPos); 
+	    if (x != null) {
+	    	axisX = MotionEvent.AXIS_X;
+	    } else {
+	    	x = getCenteredAxis(event, mInputDevice, MotionEvent.AXIS_HAT_X, historyPos);
+	    	if (x != null) {
+	    		axisX = MotionEvent.AXIS_HAT_X;
+	    	} else {
+	    		x = getCenteredAxis(event, mInputDevice, MotionEvent.AXIS_Z, historyPos);
+	    		if (x != null) {
+	    			axisX = MotionEvent.AXIS_Z;
+	    		} else {
+	    			x = Float.valueOf(0.0f);
+	    	    	//Log.e(TAG, "ERROR - x");
+	    		}
+	    	}
 	    }
-	    if (x == 0) {
-	        x = getCenteredAxis(event, mInputDevice,
-	                MotionEvent.AXIS_Z, historyPos);
+	    
+	    int axisY = -1;
+	    Float y = getCenteredAxis(event, mInputDevice, MotionEvent.AXIS_Y, historyPos);
+	    if (y != null) {
+	    	axisY = MotionEvent.AXIS_Y;
+	    } else {
+	    	y = getCenteredAxis(event, mInputDevice, MotionEvent.AXIS_HAT_Y, historyPos);
+	    	if (y != null) {
+	    		axisY = MotionEvent.AXIS_HAT_Y;
+	    	} else {
+	    		y = getCenteredAxis(event, mInputDevice, MotionEvent.AXIS_RZ, historyPos);
+	    		if (y != null) {
+	    			axisY = MotionEvent.AXIS_RZ;
+	    		} else {
+	    			y = Float.valueOf(0.0f);
+	    	    	//Log.e(TAG, "ERROR - y");
+	    		}
+	    	}
 	    }
-
-	    // Calculate the vertical distance to move by
-	    // using the input value from one of these physical controls:
-	    // the left control stick, hat switch, or the right control stick.
-	    float y = getCenteredAxis(event, mInputDevice,
-	            MotionEvent.AXIS_Y, historyPos);
-	    if (y == 0) {
-	        y = getCenteredAxis(event, mInputDevice,
-	                MotionEvent.AXIS_HAT_Y, historyPos);
-	    }
-	    if (y == 0) {
-	        y = getCenteredAxis(event, mInputDevice,
-	                MotionEvent.AXIS_RZ, historyPos);
-	    }
-
-	    Vec2 ret = new Vec2(x, y);
+	    	    
+	    //Log.i(TAG, "x:["+x+"] y:["+y+"]");
+	    
+	    Vec2 xy = new Vec2(x, y);
+	    JoystickMoveData ret = new JoystickMoveData(event, xy, axisX, axisY);
 	    return ret;
 	}
 	
 	/*
 	 * Private static Methods
 	 */
-	private static float getCenteredAxis(MotionEvent event,
-	        InputDevice device, int axis, int historyPos) {
-	    final InputDevice.MotionRange range =
-	            device.getMotionRange(axis, event.getSource());
-
+	private static Float getCenteredAxis(MotionEvent event, InputDevice device, int axis, int historyPos) {
+		
+	    final InputDevice.MotionRange range = device.getMotionRange(axis, event.getSource());
+	    
 	    // A joystick at rest does not always report an absolute position of
 	    // (0,0). Use the getFlat() method to determine the range of values
 	    // bounding the joystick axis center.
@@ -82,9 +97,16 @@ public class Joystick {
 	        // Ignore axis values that are within the 'flat' region of the
 	        // joystick axis center.
 	        if (Math.abs(value) > flat) {
-	            return value;
+	            return Float.valueOf(value);
+	        }
+	        else{
+	        	//Log.w(TAG, "getCenteredAxis abs(value):"+Math.abs(value)+" <= flat:"+flat);
 	        }
 	    }
-	    return 0;
+	    else{
+	    	//Log.w(TAG, "getCenteredAxis Range IS NULL");
+	    }
+	    
+	    return null;
 	}
 }

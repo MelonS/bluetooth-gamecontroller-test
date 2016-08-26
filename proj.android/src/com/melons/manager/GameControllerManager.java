@@ -14,26 +14,28 @@ import android.view.InputDevice;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 
-import com.melons.common.Vec2;
 import com.melons.input.Dpad;
 import com.melons.input.Joystick;
+import com.melons.input.JoystickMoveData;
 import com.melons.manager.InputManagerCompat.InputDeviceListener;
 
 public class GameControllerManager implements InputDeviceListener {
 	private static final String TAG = "GameControllerManager";
 	
 	//===[ Handler Message What Enum ]==========================================
-	public static final int MSG_WHAT_BUTTON_A 		= 1;
-	public static final int MSG_WHAT_BUTTON_B 		= 2;
-	public static final int MSG_WHAT_BUTTON_X 		= 3;
-	public static final int MSG_WHAT_BUTTON_Y 		= 4;
-	public static final int MSG_WHAT_BUTTON_L1 		= 10;
-	public static final int MSG_WHAT_BUTTON_R1 		= 11;
-	public static final int MSG_WHAT_BUTTON_L2 		= 12;
-	public static final int MSG_WHAT_BUTTON_R2 		= 13;
-	public static final int MSG_WHAT_BUTTON_START 	= 20;
-	public static final int MSG_WHAT_BUTTON_SELECT 	= 21;
-	public static final int MSG_WHAT_JOYSTICK_MOVE 	= 100;
+	public static final int MSG_WHAT_BUTTON_A 				= 1;
+	public static final int MSG_WHAT_BUTTON_B 				= 2;
+	public static final int MSG_WHAT_BUTTON_X 				= 3;
+	public static final int MSG_WHAT_BUTTON_Y 				= 4;
+	public static final int MSG_WHAT_BUTTON_L1 				= 10;
+	public static final int MSG_WHAT_BUTTON_R1 				= 11;
+	public static final int MSG_WHAT_BUTTON_L2 				= 12;
+	public static final int MSG_WHAT_BUTTON_R2 				= 13;
+	public static final int MSG_WHAT_BUTTON_START 			= 20;
+	public static final int MSG_WHAT_BUTTON_SELECT 	       	= 21;
+	public static final int MSG_WHAT_JOYSTICK_MOVE_L_STICK 	= 100;
+	public static final int MSG_WHAT_JOYSTICK_MOVE_HAT     	= 101;
+	public static final int MSG_WHAT_JOYSTICK_MOVE_R_STICK 	= 102;
 	//==========================================================================
 	
 	//===[ Setting Value ]======================================================
@@ -173,11 +175,6 @@ public class GameControllerManager implements InputDeviceListener {
 		
 		if (!_isEnable) return false;
 		
-		if (Dpad.isDpadDevice(event)) {
-			Log.i(TAG, "InputDevice.SOURCE_DPAD");
-			//TODO
-		}
-		
 		if (Joystick.isJoystickDevice(event) && Joystick.isMoveAction(event)) {
 			//Log.i(TAG, "InputDevice.SOURCE_JOYSTICK ACTION MOVE");
 			
@@ -185,12 +182,12 @@ public class GameControllerManager implements InputDeviceListener {
 			//Log.i(TAG, "historySize:"+historySize);
 			
 			for (int i = 0; i < historySize; ++i) {
-				Vec2 xy = Joystick.processJoystickInput(event, i);
-				handleJoystickMoveEvent(event, xy);
+				JoystickMoveData data = Joystick.processJoystickInput(event, i);
+				handleJoystickMoveEvent(data);
 			}
 			
-			Vec2 xy = Joystick.processJoystickInput(event, -1);
-			handleJoystickMoveEvent(event, xy);
+			JoystickMoveData data = Joystick.processJoystickInput(event, -1);
+			handleJoystickMoveEvent(data);
 			
 			return true;
 		}
@@ -230,6 +227,7 @@ public class GameControllerManager implements InputDeviceListener {
             	
                 // if the device has a gamepad or joystick
             	isFind = true;
+            	break;
             }
         }
         
@@ -240,12 +238,12 @@ public class GameControllerManager implements InputDeviceListener {
         }
     }
 	
-	private void handleJoystickMoveEvent(MotionEvent event, Vec2 xy) {
+	private void handleJoystickMoveEvent(JoystickMoveData data) {
 		
 		if (!_isEnable) return;
 		
 		// 데이터 => index(순서대로) : event+xy 컨테이너(큐)에 뒤에다가 넣는다.
-		_joystickMoveDatas.offer(new JoystickMoveData(event, xy));
+		_joystickMoveDatas.offer(data);
 	}
 
 	private void runScheduleJoystickMoveEvent() {
@@ -259,10 +257,14 @@ public class GameControllerManager implements InputDeviceListener {
 	 */
 	
 	class JoystickMoveEventScheduler extends TimerTask {
+		
+		private int lastMsgWhat = -1;
+		
 		@Override
 		public void run() {
-
 			if (!_joystickMoveDatas.isEmpty()) {
+				
+				JoystickMoveData sendData = null;
 				
 				if (_joystickMoveDatas.size() == 1) { // size == 1
 					JoystickMoveData checkData = _joystickMoveDatas.peek(); // not remove
@@ -270,17 +272,46 @@ public class GameControllerManager implements InputDeviceListener {
 						//  case [x:0,y:0]
 						//  getFront => send => popFront
 						_joystickMoveDatas.poll(); // remove
-						sendMessageAtHandler(MSG_WHAT_JOYSTICK_MOVE, (int) checkData.event.getEventTime(), -1, checkData.xy);
+						sendData = checkData;
 					}else{
 						//  case not [x:0,y:0]
 						//  getFront => send
-						sendMessageAtHandler(MSG_WHAT_JOYSTICK_MOVE, (int) checkData.event.getEventTime(), -1, checkData.xy);
+						sendData = checkData;
 					}
 				}else{
 					// size > 0
 					// getFront => send => popFront 
 					JoystickMoveData data = _joystickMoveDatas.poll(); // remove
-					sendMessageAtHandler(MSG_WHAT_JOYSTICK_MOVE, (int) data.event.getEventTime(), -1, data.xy);
+					sendData = data;
+				}
+				
+				if (sendData != null) {
+					int msg_what = -1;
+					if (sendData.isAxis_LStick()) {
+						//Log.i(TAG, "L_STICK x:"+sendData.xy.x+" y:"+sendData.xy.y);
+						msg_what    = MSG_WHAT_JOYSTICK_MOVE_L_STICK;
+						lastMsgWhat = MSG_WHAT_JOYSTICK_MOVE_L_STICK;
+					}else if (sendData.isAxis_HAT()) {
+						//Log.i(TAG, "HAT x:"+sendData.xy.x+" y:"+sendData.xy.y);
+						msg_what    = MSG_WHAT_JOYSTICK_MOVE_HAT;
+						lastMsgWhat = MSG_WHAT_JOYSTICK_MOVE_HAT;
+					}else if (sendData.isAxis_RStick()) {
+						//Log.i(TAG, "R_STICK x:"+sendData.xy.x+" y:"+sendData.xy.y);
+						msg_what    = MSG_WHAT_JOYSTICK_MOVE_R_STICK;
+						lastMsgWhat = MSG_WHAT_JOYSTICK_MOVE_R_STICK;
+					}else{
+						msg_what = lastMsgWhat;
+						Log.i(TAG, "ELSE:"+msg_what+" x:"+sendData.xy.x+" y:"+sendData.xy.y);
+					}
+					
+					if (msg_what > 0) {
+						sendMessageAtHandler(msg_what, (int) sendData.event.getEventTime(), -1, sendData.xy);
+					}else{
+						//Log.e(TAG, "JoystickMoveEventScheduler ERROR 2");
+					}
+					
+				}else{
+					//Log.e(TAG, "JoystickMoveEventScheduler ERROR 1");
 				}
 			}
 		}
