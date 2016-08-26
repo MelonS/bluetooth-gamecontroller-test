@@ -37,7 +37,7 @@ public class GameControllerManager implements InputDeviceListener {
 	
 	private InputManagerCompat _InputManager = null;
 	
-	private BlockingQueue<JoystickMoveData> _joystickMoveDatas = new LinkedBlockingQueue<JoystickMoveData>();
+	private BlockingQueue<JoystickMoveData> _joystickMoveDatas = new LinkedBlockingQueue<JoystickMoveData>(); // thread safe
 	
 	public static GameControllerManager getInstance() {
 		if (__inst == null) {
@@ -209,27 +209,23 @@ public class GameControllerManager implements InputDeviceListener {
 	class JoystickMoveEventScheduler extends TimerTask {
 		@Override
 		public void run() {
-			//Log.i(TAG, "JoystickMoveEventScheduler run() : "+System.currentTimeMillis());
 
 			if (!_joystickMoveDatas.isEmpty()) {
 				
-				//Log.i(TAG, "_joystickMoveDatas Size:"+_joystickMoveDatas.size());
-				
-				if (_joystickMoveDatas.size() == 1) { // 1개 있을 때
-					JoystickMoveData checkData = _joystickMoveDatas.peek();
+				if (_joystickMoveDatas.size() == 1) { // size == 1
+					JoystickMoveData checkData = _joystickMoveDatas.peek(); // not remove
 					if (checkData.xy.isZero()) {
-						//  2-2. [0,0] 일때.
-						//    getFront => send => popFront
+						//  case [x:0,y:0]
+						//  getFront => send => popFront
 						_joystickMoveDatas.poll(); // remove
 						sendMessageAtHandler(MSG_WHAT_JOYSTICK_MOVE, (int) checkData.event.getEventTime(), -1, checkData.xy);
 					}else{
-						//  2-1. [0,0] 이 아닐때.
-						//    getFront => send	
-						//sendMessageAtHandler(MSG_WHAT_JOYSTICK_MOVE, (int) checkData.event.getEventTime(), -1, checkData.xy); // TODO : 사용할 코드.
-						sendMessageAtHandler(MSG_WHAT_JOYSTICK_MOVE, (int) System.currentTimeMillis(), -1, checkData.xy); // TODO : 테스트 코드.
+						//  case not [x:0,y:0]
+						//  getFront => send
+						sendMessageAtHandler(MSG_WHAT_JOYSTICK_MOVE, (int) checkData.event.getEventTime(), -1, checkData.xy);
 					}
 				}else{
-					// 여러개 있을 때
+					// size > 0
 					// getFront => send => popFront 
 					JoystickMoveData data = _joystickMoveDatas.poll(); // remove
 					sendMessageAtHandler(MSG_WHAT_JOYSTICK_MOVE, (int) data.event.getEventTime(), -1, data.xy);
