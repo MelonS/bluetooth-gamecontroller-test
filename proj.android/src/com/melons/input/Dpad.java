@@ -79,4 +79,14 @@ public class Dpad {
              return false;
          }
      }
+    
+    public static boolean isGamepadDevice(InputEvent event) {
+    	// Check that input comes from a device with directional pads.
+        if ((event.getSource() & InputDevice.SOURCE_GAMEPAD)
+             == InputDevice.SOURCE_GAMEPAD) {
+             return true;
+         } else {
+             return false;
+         }
+    }
 }

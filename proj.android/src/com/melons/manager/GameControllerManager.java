@@ -25,7 +25,15 @@ public class GameControllerManager implements InputDeviceListener {
 	//===[ Handler Message What Enum ]==========================================
 	public static final int MSG_WHAT_BUTTON_A 		= 1;
 	public static final int MSG_WHAT_BUTTON_B 		= 2;
-	public static final int MSG_WHAT_JOYSTICK_MOVE 	= 3;
+	public static final int MSG_WHAT_BUTTON_X 		= 3;
+	public static final int MSG_WHAT_BUTTON_Y 		= 4;
+	public static final int MSG_WHAT_BUTTON_L1 		= 10;
+	public static final int MSG_WHAT_BUTTON_R1 		= 11;
+	public static final int MSG_WHAT_BUTTON_L2 		= 12;
+	public static final int MSG_WHAT_BUTTON_R2 		= 13;
+	public static final int MSG_WHAT_BUTTON_START 	= 20;
+	public static final int MSG_WHAT_BUTTON_SELECT 	= 21;
+	public static final int MSG_WHAT_JOYSTICK_MOVE 	= 100;
 	//==========================================================================
 	
 	//===[ Setting Value ]======================================================
@@ -115,19 +123,44 @@ public class GameControllerManager implements InputDeviceListener {
 		
 		if (!_isEnable) return false;
 		
-		if (Dpad.isDpadDevice(event)) {
+		if (Dpad.isDpadDevice(event) || Dpad.isGamepadDevice(event)) {
 
-			if (keyCode == KeyEvent.KEYCODE_BUTTON_A) {
-				//Log.i(TAG, "onKeyDown KEYCODE_BUTTON_A");
+			switch (keyCode) {
+			case KeyEvent.KEYCODE_BUTTON_A:
 				sendMessageAtHandler(MSG_WHAT_BUTTON_A, event.getRepeatCount(), (int)event.getEventTime(), null);
 				return true;
-			}else if (keyCode == KeyEvent.KEYCODE_BUTTON_B) {
-				//Log.i(TAG, "onKeyDown KEYCODE_BUTTON_B");
+			case KeyEvent.KEYCODE_BUTTON_B:
 				sendMessageAtHandler(MSG_WHAT_BUTTON_B, event.getRepeatCount(), (int)event.getEventTime(), null);
 				return true;
-			}else{
+			case KeyEvent.KEYCODE_BUTTON_X:
+				sendMessageAtHandler(MSG_WHAT_BUTTON_X, event.getRepeatCount(), (int)event.getEventTime(), null);
+				return true;
+			case KeyEvent.KEYCODE_BUTTON_Y:
+				sendMessageAtHandler(MSG_WHAT_BUTTON_Y, event.getRepeatCount(), (int)event.getEventTime(), null);
+				return true;
+			case KeyEvent.KEYCODE_BUTTON_L1:
+				sendMessageAtHandler(MSG_WHAT_BUTTON_L1, event.getRepeatCount(), (int)event.getEventTime(), null);
+				return true;
+			case KeyEvent.KEYCODE_BUTTON_R1:
+				sendMessageAtHandler(MSG_WHAT_BUTTON_R1, event.getRepeatCount(), (int)event.getEventTime(), null);
+				return true;
+			case KeyEvent.KEYCODE_BUTTON_L2:
+				sendMessageAtHandler(MSG_WHAT_BUTTON_L2, event.getRepeatCount(), (int)event.getEventTime(), null);
+				return true;
+			case KeyEvent.KEYCODE_BUTTON_R2:
+				sendMessageAtHandler(MSG_WHAT_BUTTON_R2, event.getRepeatCount(), (int)event.getEventTime(), null);
+				return true;
+			case KeyEvent.KEYCODE_BUTTON_START:
+				sendMessageAtHandler(MSG_WHAT_BUTTON_START, event.getRepeatCount(), (int)event.getEventTime(), null);
+				return true;
+			case KeyEvent.KEYCODE_BUTTON_SELECT:
+				sendMessageAtHandler(MSG_WHAT_BUTTON_SELECT, event.getRepeatCount(), (int)event.getEventTime(), null);
+				return true;
+			default:
 				Log.i(TAG, "onKeyDown ELSE keyCode"+KeyEvent.keyCodeToString(event.getKeyCode()));
+				break;
 			}
+			
 		}
 		
 		return false;
