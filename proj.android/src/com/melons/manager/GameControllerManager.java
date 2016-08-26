@@ -258,15 +258,6 @@ public class GameControllerManager implements InputDeviceListener {
 	 * Inner Classes
 	 */
 	
-	class JoystickMoveData {
-		public MotionEvent event;
-		public Vec2 xy;
-		public JoystickMoveData(MotionEvent event_, Vec2 xy_) {
-			this.event = event_;
-			this.xy    = xy_;
-		}
-	}
-	
 	class JoystickMoveEventScheduler extends TimerTask {
 		@Override
 		public void run() {
