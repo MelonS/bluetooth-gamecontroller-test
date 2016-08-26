@@ -22,22 +22,26 @@ import com.melons.manager.InputManagerCompat.InputDeviceListener;
 public class GameControllerManager implements InputDeviceListener {
 	private static final String TAG = "GameControllerManager";
 	
+	//===[ Handler Message What Enum ]==========================================
 	public static final int MSG_WHAT_BUTTON_A 		= 1;
 	public static final int MSG_WHAT_BUTTON_B 		= 2;
 	public static final int MSG_WHAT_JOYSTICK_MOVE 	= 3;
-
+	//==========================================================================
+	
+	//===[ Setting Value ]======================================================
 	private static final int JOYSTICK_MOVE_SEND_PERIOD = 10; // millisecond
+	//==========================================================================
 	
 	private static GameControllerManager __inst = null;
-	
 	@SuppressWarnings("unused")
 	private Activity _activity = null;
 	private Context _context = null;
 	private Handler _handler = null;
 	
 	private InputManagerCompat _InputManager = null;
-	
 	private BlockingQueue<JoystickMoveData> _joystickMoveDatas = new LinkedBlockingQueue<JoystickMoveData>(); // thread safe
+	
+	private boolean _isEnable = false;
 	
 	public static GameControllerManager getInstance() {
 		if (__inst == null) {
@@ -54,7 +58,9 @@ public class GameControllerManager implements InputDeviceListener {
 		_activity = act;
 		_context = act.getApplicationContext();
 		_handler = handler;
-				
+	}
+	
+	public void setup() {
 		_InputManager = InputManagerCompat.Factory.getInputManager(_context);
 		_InputManager.registerInputDeviceListener(this, null);
 		
@@ -63,6 +69,10 @@ public class GameControllerManager implements InputDeviceListener {
 		runScheduleJoystickMoveEvent();
 	}
 
+	public void setEnable(boolean isOn) {
+		_isEnable = isOn;
+	}
+	
 	/*
 	 * Implement Methods
 	 */
@@ -86,10 +96,24 @@ public class GameControllerManager implements InputDeviceListener {
 	}
 	
 	/*
+	 * Public Static Methods 
+	 */
+	
+	public static void callSetup() {
+		getInstance().setup();
+	}
+	
+	public static void callSetEnable(boolean isOn) {
+		getInstance().setEnable(isOn);
+	}
+	
+	/*
 	 * Public Methods
 	 */
 	
 	public boolean handleKeyDown(int keyCode, KeyEvent event) {
+		
+		if (!_isEnable) return false;
 		
 		if (Dpad.isDpadDevice(event)) {
 
@@ -102,7 +126,7 @@ public class GameControllerManager implements InputDeviceListener {
 				sendMessageAtHandler(MSG_WHAT_BUTTON_B, event.getRepeatCount(), (int)event.getEventTime(), null);
 				return true;
 			}else{
-				Log.i(TAG, "onKeyDown ELSE event:"+event);
+				Log.i(TAG, "onKeyDown ELSE keyCode"+KeyEvent.keyCodeToString(event.getKeyCode()));
 			}
 		}
 		
@@ -113,6 +137,8 @@ public class GameControllerManager implements InputDeviceListener {
 
 		if (_InputManager != null)
 			_InputManager.onGenericMotionEvent(event);
+		
+		if (!_isEnable) return false;
 		
 		if (Dpad.isDpadDevice(event)) {
 			Log.i(TAG, "InputDevice.SOURCE_DPAD");
@@ -182,6 +208,8 @@ public class GameControllerManager implements InputDeviceListener {
     }
 	
 	private void handleJoystickMoveEvent(MotionEvent event, Vec2 xy) {
+		
+		if (!_isEnable) return;
 		
 		// 데이터 => index(순서대로) : event+xy 컨테이너(큐)에 뒤에다가 넣는다.
 		_joystickMoveDatas.offer(new JoystickMoveData(event, xy));

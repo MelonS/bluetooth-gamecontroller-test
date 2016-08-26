@@ -39,6 +39,16 @@ public class MainActivity extends Activity {
 		GameControllerManager.getInstance().init(this, _handler);
 	}
 	
+	@Override
+	protected void onStart() {
+		super.onStart();
+		
+		GameControllerManager.callSetup();
+		GameControllerManager.callSetEnable(true);
+	}
+
+
+
 	@SuppressLint("HandlerLeak")
 	class DebugHandler extends Handler {
 		@Override
@@ -69,26 +79,20 @@ public class MainActivity extends Activity {
 			case GameControllerManager.MSG_WHAT_JOYSTICK_MOVE:
 			{
 				int eventTime = msg.arg1;
-				
-				float x = -1.0f;
-				float y = -1.0f;
 				Vec2 xy = (Vec2)msg.obj;
 				if (xy != null) {
-					x = xy.x;
-					y = xy.y;
-				}
-				
-				Log.i(TAG,"x:["+xy.x+"] y:["+xy.y+"]");
-				
-				_tv3.setText("x:["+x+"] y:["+y+"]");
-				_tv4.setText("time:"+eventTime);
-				
-				if (x == 0 && y == 0) {
-					_tv3.setBackgroundColor(Color.TRANSPARENT);
-					_tv4.setBackgroundColor(Color.TRANSPARENT);
-				}else{
-					_tv3.setBackgroundColor(Color.RED);
-					_tv4.setBackgroundColor(Color.GREEN);
+					Log.i(TAG,"x:["+xy.x+"] y:["+xy.y+"]");
+					
+					_tv3.setText("x:["+xy.x+"] y:["+xy.y+"]");
+					_tv4.setText("time:"+eventTime);
+					
+					if (xy.isZero()) {
+						_tv3.setBackgroundColor(Color.TRANSPARENT);
+						_tv4.setBackgroundColor(Color.TRANSPARENT);
+					}else{
+						_tv3.setBackgroundColor(Color.RED);
+						_tv4.setBackgroundColor(Color.GREEN);
+					}
 				}
 			}
 				break;
