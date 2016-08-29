@@ -15,9 +15,10 @@ import android.view.KeyEvent;
 import android.view.MotionEvent;
 
 import com.melons.input.Dpad;
+import com.melons.input.InputManagerCompat;
 import com.melons.input.Joystick;
 import com.melons.input.JoystickMoveData;
-import com.melons.manager.InputManagerCompat.InputDeviceListener;
+import com.melons.input.InputManagerCompat.InputDeviceListener;
 
 public class GameControllerManager implements InputDeviceListener {
 	private static final String TAG = "GameControllerManager";
@@ -33,9 +34,10 @@ public class GameControllerManager implements InputDeviceListener {
 	public static final int MSG_WHAT_BUTTON_R2 				= 13;
 	public static final int MSG_WHAT_BUTTON_START 			= 20;
 	public static final int MSG_WHAT_BUTTON_SELECT 	       	= 21;
-	public static final int MSG_WHAT_JOYSTICK_MOVE_L_STICK 	= 100;
-	public static final int MSG_WHAT_JOYSTICK_MOVE_HAT     	= 101;
-	public static final int MSG_WHAT_JOYSTICK_MOVE_R_STICK 	= 102;
+	
+	public static final int MSG_WHAT_JOYSTICK_MOVE_L_STICK	= 100;
+	public static final int MSG_WHAT_JOYSTICK_MOVE_HAT		= 101;
+	public static final int MSG_WHAT_JOYSTICK_MOVE_R_STICK	= 102;
 	//==========================================================================
 	
 	//===[ Setting Value ]======================================================
@@ -117,6 +119,10 @@ public class GameControllerManager implements InputDeviceListener {
 		getInstance().setEnable(isOn);
 	}
 	
+	public static boolean callIsFindGameController() {
+		return getInstance().isFindGameController();
+	}
+	
 	/*
 	 * Public Methods
 	 */
@@ -127,43 +133,31 @@ public class GameControllerManager implements InputDeviceListener {
 		
 		if (Dpad.isDpadDevice(event) || Dpad.isGamepadDevice(event)) {
 
+			int msg_what = -1;
+			
 			switch (keyCode) {
-			case KeyEvent.KEYCODE_BUTTON_A:
-				sendMessageAtHandler(MSG_WHAT_BUTTON_A, event.getRepeatCount(), (int)event.getEventTime(), null);
-				return true;
-			case KeyEvent.KEYCODE_BUTTON_B:
-				sendMessageAtHandler(MSG_WHAT_BUTTON_B, event.getRepeatCount(), (int)event.getEventTime(), null);
-				return true;
-			case KeyEvent.KEYCODE_BUTTON_X:
-				sendMessageAtHandler(MSG_WHAT_BUTTON_X, event.getRepeatCount(), (int)event.getEventTime(), null);
-				return true;
-			case KeyEvent.KEYCODE_BUTTON_Y:
-				sendMessageAtHandler(MSG_WHAT_BUTTON_Y, event.getRepeatCount(), (int)event.getEventTime(), null);
-				return true;
-			case KeyEvent.KEYCODE_BUTTON_L1:
-				sendMessageAtHandler(MSG_WHAT_BUTTON_L1, event.getRepeatCount(), (int)event.getEventTime(), null);
-				return true;
-			case KeyEvent.KEYCODE_BUTTON_R1:
-				sendMessageAtHandler(MSG_WHAT_BUTTON_R1, event.getRepeatCount(), (int)event.getEventTime(), null);
-				return true;
-			case KeyEvent.KEYCODE_BUTTON_L2:
-				sendMessageAtHandler(MSG_WHAT_BUTTON_L2, event.getRepeatCount(), (int)event.getEventTime(), null);
-				return true;
-			case KeyEvent.KEYCODE_BUTTON_R2:
-				sendMessageAtHandler(MSG_WHAT_BUTTON_R2, event.getRepeatCount(), (int)event.getEventTime(), null);
-				return true;
-			case KeyEvent.KEYCODE_BUTTON_START:
-				sendMessageAtHandler(MSG_WHAT_BUTTON_START, event.getRepeatCount(), (int)event.getEventTime(), null);
-				return true;
-			case KeyEvent.KEYCODE_BUTTON_SELECT:
-				sendMessageAtHandler(MSG_WHAT_BUTTON_SELECT, event.getRepeatCount(), (int)event.getEventTime(), null);
-				return true;
+			case KeyEvent.KEYCODE_BUTTON_A:		msg_what = MSG_WHAT_BUTTON_A;			break;
+			case KeyEvent.KEYCODE_BUTTON_B:		msg_what = MSG_WHAT_BUTTON_B;			break;
+			case KeyEvent.KEYCODE_BUTTON_X:		msg_what = MSG_WHAT_BUTTON_X;			break;
+			case KeyEvent.KEYCODE_BUTTON_Y:		msg_what = MSG_WHAT_BUTTON_Y;			break;
+			case KeyEvent.KEYCODE_BUTTON_L1:		msg_what = MSG_WHAT_BUTTON_L1;		break;
+			case KeyEvent.KEYCODE_BUTTON_R1:		msg_what = MSG_WHAT_BUTTON_R1;		break;
+			case KeyEvent.KEYCODE_BUTTON_L2:		msg_what = MSG_WHAT_BUTTON_L2;		break;
+			case KeyEvent.KEYCODE_BUTTON_R2:		msg_what = MSG_WHAT_BUTTON_R2;		break;
+			case KeyEvent.KEYCODE_BUTTON_START:	msg_what = MSG_WHAT_BUTTON_START;		break;
+			case KeyEvent.KEYCODE_BUTTON_SELECT:	msg_what = MSG_WHAT_BUTTON_SELECT;	break;
 			default:
 				Log.i(TAG, "onKeyDown ELSE keyCode"+KeyEvent.keyCodeToString(event.getKeyCode()));
 				break;
 			}
 			
-		}
+			if (msg_what > 0) {
+				sendMessageAtHandler(msg_what, event.getRepeatCount(), (int)event.getEventTime(), null);
+				sendNativeMethod(msg_what, event.getEventTime(), -1.0f, -1.0f);
+				return true;
+			}
+			
+ 		}
 		
 		return false;
 	}
@@ -210,27 +204,40 @@ public class GameControllerManager implements InputDeviceListener {
 		}
 	}
 	
+	private void sendNativeMethod(int what, long eventTime, float x, float y) {
+		// btn => x,y == -1.0f,-1.0f
+		
+		if (what >= MSG_WHAT_JOYSTICK_MOVE_L_STICK) {
+			// stick
+		}else{
+			// button
+		}
+	}
+	
+	private boolean isFindGameController() {
+
+		if (_InputManager != null) {
+	        int[] deviceIds = _InputManager.getInputDeviceIds();
+	        
+	        for (int deviceId : deviceIds) {
+	        	
+	            InputDevice dev = _InputManager.getInputDevice(deviceId);
+	            int sources = dev.getSources();
+	            
+	            if (((sources & InputDevice.SOURCE_GAMEPAD) == InputDevice.SOURCE_GAMEPAD)
+	            		|| ((sources & InputDevice.SOURCE_JOYSTICK) == InputDevice.SOURCE_JOYSTICK)) {
+	            	return true;
+	            }
+	        }
+		}
+		
+		return false;
+	}
+	
 	private void printFindControllers() {
 		
-		boolean isFind = false;
+		boolean isFind = isFindGameController();
 		
-        int[] deviceIds = _InputManager.getInputDeviceIds();
-        //Log.i(TAG, "findControllers deviceCount:["+deviceIds.length+"]");
-        for (int deviceId : deviceIds) {
-        	//Log.i(TAG, "findControllers deviceId:"+deviceId);
-            InputDevice dev = _InputManager.getInputDevice(deviceId);
-            int sources = dev.getSources();
-            //Log.i(TAG, "findControllers sources:"+sources);
-            // if the device is a gamepad/joystick, create a ship to represent it
-            if (((sources & InputDevice.SOURCE_GAMEPAD) == InputDevice.SOURCE_GAMEPAD) ||
-                    ((sources & InputDevice.SOURCE_JOYSTICK) == InputDevice.SOURCE_JOYSTICK)) {
-            	
-                // if the device has a gamepad or joystick
-            	isFind = true;
-            	break;
-            }
-        }
-        
         if (isFind) {
         	Log.i(TAG, "printFindControllers : Find the JOYSTICK OR GAMEPAD!!!");
         }else{
@@ -306,6 +313,7 @@ public class GameControllerManager implements InputDeviceListener {
 					
 					if (msg_what > 0) {
 						sendMessageAtHandler(msg_what, (int) sendData.event.getEventTime(), -1, sendData.xy);
+						sendNativeMethod(msg_what, sendData.event.getEventTime(), sendData.xy.x, sendData.xy.y);
 					}else{
 						//Log.e(TAG, "JoystickMoveEventScheduler ERROR 2");
 					}

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.melons.manager;
+package com.melons.input;
 
 import android.content.Context;
 import android.os.Build;
